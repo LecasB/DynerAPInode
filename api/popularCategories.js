@@ -27,8 +27,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Reference to the 'menu/menus' node
-    const ref = db.ref("menu/menus");
+    const ref = db.ref("menu/categories");
     const snapshot = await ref.once("value");
     const data = snapshot.val();
 
@@ -36,9 +35,8 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: "No data found" });
     }
 
-    const menuItems = Object.values(data); // Convert the object to an array
+    const menuItems = Object.values(data);
 
-    // Shuffle the array and get the first 3 items
     const getRandomItems = (items, num) => {
       const shuffled = items.sort(() => 0.5 - Math.random());
       return shuffled.slice(0, num);
