@@ -28,23 +28,45 @@ module.exports = async (req, res) => {
 
   if (req.method === "POST") {
     try {
-      // Assuming the data sent in the body is a JSON object
-      const newData = req.body; // Access the data sent in the POST request body
+      const newMessage = req.body.message; // Access the message sent in the POST request body
+
+      if (!newMessage) {
+        return res.status(400).json({ error: "Message is required" });
+      }
 
       // Reference the Firebase node where data will be saved
       const ref = db.ref("menu/actions");
+
+      // Get the current data to determine the last id
+      const snapshot = await ref
+        .orderByChild("id")
+        .limitToLast(1)
+        .once("value");
+      const lastItem = snapshot.val();
+
+      let newId = 1; // Default ID is 1 if there is no existing data
+
+      // If there's data, increment the last ID by 1
+      if (lastItem) {
+        const lastId = Object.keys(lastItem)[0]; // Get the ID of the last item
+        newId = parseInt(lastId) + 1; // Increment the ID
+      }
+
+      // Create a new object with the new id and message
+      const newData = {
+        id: newId,
+        message: newMessage,
+      };
 
       // Push the new data under the "actions" node
       const newRef = ref.push();
       await newRef.set(newData); // Save the data to Firebase
 
       // Send success response
-      res
-        .status(200)
-        .json({
-          message: "Data successfully added to Firebase!",
-          data: newData,
-        });
+      res.status(200).json({
+        message: "Data successfully added to Firebase!",
+        data: newData,
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
