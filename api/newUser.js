@@ -29,24 +29,28 @@ module.exports = async (req, res) => {
 
   if (req.method === "POST") {
     try {
-      const { email, id, password, role, token, username } = req.body;
+      const { email, password, role, username } = req.body;
 
       // Validate required fields
-      if (!email || !id || !password || !role || !token || !username) {
+      if (!email || !password || !role || !username) {
         return res.status(400).json({
           error:
-            "All user fields (email, id, password, role, token, username) are required.",
+            "All user fields (email, password, role, username) are required.",
         });
       }
 
-      const ref = db.ref("menu/users");
+      const ref = db.ref("menu/user");
 
       // Fetch the current data
       const snapshot = await ref.once("value");
       const users = snapshot.val() || []; // Default to an empty array if no users exist
 
       // Determine the next available ID
-      const newId = users.length > 0 ? users[users.length - 1].id + 1 : 1;
+      const newId =
+        users.length > 0 ? Math.max(...users.map((user) => user.id)) + 1 : 1;
+
+      // Generate a random token (for example, a random number between 100000 and 999999)
+      const randomToken = Math.floor(Math.random() * 900000) + 100000;
 
       // Prepare the new user object
       const newUser = {
@@ -54,7 +58,7 @@ module.exports = async (req, res) => {
         email,
         password,
         role,
-        token,
+        token: randomToken,
         username,
       };
 
