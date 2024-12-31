@@ -22,21 +22,39 @@ module.exports.deleteUser = async (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  const { userId } = req.body;
+  // Ensure method is DELETE
+  if (req.method !== "DELETE") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
+  // Get the userId from the URL parameters or request body
+  const { userId } = req.params || req.body;
+
+  // Check if the userId is provided
   if (!userId) {
     return res.status(400).json({ error: "User ID is required" });
   }
 
   try {
     const ref = db.ref(`menu/user/${userId}`);
+
+    // Check if the user exists before trying to delete
+    const snapshot = await ref.once("value");
+    if (!snapshot.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Remove the user from the database
     await ref.remove();
+
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
+    console.error("Error deleting user:", error);
     res.status(500).json({ error: error.message });
   }
 };
