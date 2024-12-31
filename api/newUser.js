@@ -18,6 +18,7 @@ if (!admin.apps.length) {
 const db = admin.database();
 
 module.exports.insertUser = async (req, res) => {
+  // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -37,28 +38,30 @@ module.exports.insertUser = async (req, res) => {
     !userData.token ||
     !userData.username
   ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "All user fields (email, id, password, role, token, username) are required.",
-      });
+    return res.status(400).json({
+      error:
+        "All user fields (email, id, password, role, token, username) are required.",
+    });
   }
 
   try {
-    const ref = db.ref("menu/user");
-
-    // Fetch the existing user data to find the next available index
+    const ref = db.ref("menu/users"); // Ensure the correct path in your database
     const snapshot = await ref.once("value");
-    const users = snapshot.val() || [];
-    const nextIndex = users.length; // Determine the next numeric key
+    const users = snapshot.val() || {}; // Handle the data as an object, not an array
 
-    // Add the new user at the next available index
-    await ref.child(nextIndex).set(userData);
+    // Generate a unique key for the new user
+    const newUserRef = ref.push(); // This generates a unique ID in Firebase
+    const newUserId = newUserRef.key;
+
+    // Set the new user data
+    await newUserRef.set({
+      id: newUserId, // Use Firebase's unique ID
+      ...userData,
+    });
 
     res
       .status(200)
-      .json({ message: "User added successfully", userIndex: nextIndex });
+      .json({ message: "User added successfully", userId: newUserId });
   } catch (error) {
     console.error("Error adding user:", error);
     res.status(500).json({ error: "Internal server error" });
