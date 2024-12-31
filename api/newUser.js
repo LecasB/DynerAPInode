@@ -26,19 +26,41 @@ module.exports.insertUser = async (req, res) => {
     return res.status(200).end();
   }
 
-  const { userId, userData } = req.body;
+  const userData = req.body;
 
-  if (!userId || !userData) {
+  // Validate required fields
+  if (
+    !userData.email ||
+    !userData.id ||
+    !userData.password ||
+    !userData.role ||
+    !userData.token ||
+    !userData.username
+  ) {
     return res
       .status(400)
-      .json({ error: "User ID and user data are required" });
+      .json({
+        error:
+          "All user fields (email, id, password, role, token, username) are required.",
+      });
   }
 
   try {
-    const ref = db.ref(`menu/user/${userId}`);
-    await ref.set(userData);
-    res.status(200).json({ message: "User added successfully" });
+    const ref = db.ref("menu/user");
+
+    // Fetch the existing user data to find the next available index
+    const snapshot = await ref.once("value");
+    const users = snapshot.val() || [];
+    const nextIndex = users.length; // Determine the next numeric key
+
+    // Add the new user at the next available index
+    await ref.child(nextIndex).set(userData);
+
+    res
+      .status(200)
+      .json({ message: "User added successfully", userIndex: nextIndex });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error adding user:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
