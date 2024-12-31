@@ -29,48 +29,35 @@ module.exports = async (req, res) => {
 
   if (req.method === "POST") {
     try {
-      const { email, id, password, role, token, username } = req.body;
+      const newMessage = req.body.message;
 
-      // Validate required fields
-      if (!email || !id || !password || !role || !token || !username) {
-        return res.status(400).json({
-          error:
-            "All user fields (email, id, password, role, token, username) are required.",
-        });
+      if (!newMessage) {
+        return res.status(400).json({ error: "Message is required" });
       }
 
-      const ref = db.ref("menu/users");
+      const ref = db.ref("menu/actions");
 
-      // Fetch the current data
       const snapshot = await ref.once("value");
-      const users = snapshot.val() || []; // Default to an empty array if no users exist
+      const actions = snapshot.val();
 
-      // Determine the next available ID
-      const newId = users.length > 0 ? users[users.length - 1].id + 1 : 1;
+      const newId = actions.length > 0 ? actions[actions.length - 1].id + 1 : 1;
 
-      // Prepare the new user object
-      const newUser = {
+      const newData = {
         id: newId,
-        email,
-        password,
-        role,
-        token,
-        username,
+        message: newMessage,
       };
 
-      // Add the new user to the array
-      users.push(newUser);
+      actions.push(newData);
 
-      // Save the updated array back to Firebase
-      await ref.set(users);
+      await ref.set(actions);
 
       res.status(200).json({
-        message: "User added successfully",
-        data: newUser,
+        message: "Data successfully added to Firebase!",
+        data: newData,
       });
     } catch (error) {
-      console.error("Error adding user:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error(error);
+      res.status(500).json({ error: error.message });
     }
   } else {
     res.status(405).json({ error: "Method Not Allowed" });

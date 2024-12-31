@@ -17,53 +17,62 @@ if (!admin.apps.length) {
 
 const db = admin.database();
 
-module.exports.insertUser = async (req, res) => {
-  // Set CORS headers
+module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  const userData = req.body;
+  if (req.method === "POST") {
+    try {
+      const { email, id, password, role, token, username } = req.body;
 
-  // Validate required fields
-  if (
-    !userData.email ||
-    !userData.id ||
-    !userData.password ||
-    !userData.role ||
-    !userData.token ||
-    !userData.username
-  ) {
-    return res.status(400).json({
-      error:
-        "All user fields (email, id, password, role, token, username) are required.",
-    });
-  }
+      // Validate required fields
+      if (!email || !id || !password || !role || !token || !username) {
+        return res.status(400).json({
+          error:
+            "All user fields (email, id, password, role, token, username) are required.",
+        });
+      }
 
-  try {
-    const ref = db.ref("menu/users"); // Ensure the correct path in your database
-    const snapshot = await ref.once("value");
-    const users = snapshot.val() || {}; // Handle the data as an object, not an array
+      const ref = db.ref("menu/users");
 
-    // Generate a unique key for the new user
-    const newUserRef = ref.push(); // This generates a unique ID in Firebase
-    const newUserId = newUserRef.key;
+      // Fetch the current data
+      const snapshot = await ref.once("value");
+      const users = snapshot.val() || []; // Default to an empty array if no users exist
 
-    // Set the new user data
-    await newUserRef.set({
-      id: newUserId, // Use Firebase's unique ID
-      ...userData,
-    });
+      // Determine the next available ID
+      const newId = users.length > 0 ? users[users.length - 1].id + 1 : 1;
 
-    res
-      .status(200)
-      .json({ message: "User added successfully", userId: newUserId });
-  } catch (error) {
-    console.error("Error adding user:", error);
-    res.status(500).json({ error: "Internal server error" });
+      // Prepare the new user object
+      const newUser = {
+        id: newId,
+        email,
+        password,
+        role,
+        token,
+        username,
+      };
+
+      // Add the new user to the array
+      users.push(newUser);
+
+      // Save the updated array back to Firebase
+      await ref.set(users);
+
+      res.status(200).json({
+        message: "User added successfully",
+        data: newUser,
+      });
+    } catch (error) {
+      console.error("Error adding user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  } else {
+    res.status(405).json({ error: "Method Not Allowed" });
   }
 };
