@@ -29,7 +29,15 @@ module.exports = async (req, res) => {
   try {
     const ref = db.ref("menu/user");
     const snapshot = await ref.once("value");
-    const data = snapshot.val();
+    let data = snapshot.val();
+
+    // Filter out null values
+    if (data) {
+      data = Object.values(data).filter((user) => user !== null);
+    } else {
+      data = [];
+    }
+
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
