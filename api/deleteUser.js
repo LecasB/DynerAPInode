@@ -41,11 +41,11 @@ module.exports.deleteUser = async (req, res) => {
   }
 
   // Get the userId from the request
-  const { userId } = req.params || req.body;
+  const userId = req.params.userId || req.body.userId;
 
   // Validate the userId
-  if (!userId) {
-    return res.status(400).json({ error: "User ID is required" });
+  if (!userId || typeof userId !== "string" || userId.trim() === "") {
+    return res.status(400).json({ error: "Invalid or missing User ID" });
   }
 
   try {
@@ -61,7 +61,9 @@ module.exports.deleteUser = async (req, res) => {
     await userRef.remove();
 
     // Respond with success
-    return res.status(200).json({ message: "User deleted successfully" });
+    return res
+      .status(200)
+      .json({ message: `User with ID '${userId}' deleted successfully` });
   } catch (error) {
     console.error("Error deleting user:", error);
     return res
