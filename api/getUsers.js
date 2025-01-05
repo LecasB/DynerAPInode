@@ -28,9 +28,31 @@ module.exports = async (req, res) => {
 
   try {
     const ref = db.ref("menu/user");
-    const snapshot = await ref.once("value");
-    const data = snapshot.val();
-    res.status(200).json(data);
+
+    // GET method - Fetching user data
+    if (req.method === "GET") {
+      const snapshot = await ref.once("value");
+      const data = snapshot.val();
+      return res.status(200).json(data);
+    }
+
+    // DELETE method - Deleting a user based on userId
+    if (req.method === "DELETE") {
+      const { userId } = req.query; // Extract userId from query string
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Delete the user from the database
+      await ref.child(userId).remove();
+      return res
+        .status(200)
+        .json({ message: `User ${userId} deleted successfully` });
+    }
+
+    // Handle unsupported methods
+    res.status(405).json({ error: "Method Not Allowed" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
