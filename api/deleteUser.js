@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+// Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -17,44 +18,54 @@ if (!admin.apps.length) {
 
 const db = admin.database();
 
-module.exports.deleteUser = async (req, res) => {
+// Helper function to handle CORS
+const setCorsHeaders = (res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+};
+
+// Main function to delete a user
+module.exports.deleteUser = async (req, res) => {
+  // Set CORS headers
+  setCorsHeaders(res);
 
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  // Ensure method is DELETE
+  // Ensure the method is DELETE
   if (req.method !== "DELETE") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  // Get the userId from the URL parameters or request body
+  // Get the userId from the request
   const { userId } = req.params || req.body;
 
-  // Check if the userId is provided
+  // Validate the userId
   if (!userId) {
     return res.status(400).json({ error: "User ID is required" });
   }
 
   try {
-    const ref = db.ref(`menu/user/${userId}`);
+    const userRef = db.ref(`menu/user/${userId}`);
 
-    // Check if the user exists before trying to delete
-    const snapshot = await ref.once("value");
+    // Check if the user exists
+    const snapshot = await userRef.once("value");
     if (!snapshot.exists()) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Remove the user from the database
-    await ref.remove();
+    // Delete the user
+    await userRef.remove();
 
-    res.status(200).json({ message: "User deleted successfully" });
+    // Respond with success
+    return res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Error deleting user:", error);
-    res.status(500).json({ error: error.message });
+    return res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
   }
 };
