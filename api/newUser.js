@@ -1,3 +1,22 @@
+const admin = require("firebase-admin");
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    }),
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
+  });
+}
+
+const db = admin.database();
+
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -24,12 +43,12 @@ module.exports = async (req, res) => {
 
       // Fetch the current data
       const snapshot = await ref.once("value");
-      const users = snapshot.val() || []; // Default to an empty array if no users exist
+      const users = snapshot.val() || {}; // Default to an empty object if no users exist
 
       console.log("Current users:", users); // Log current users
 
       // Ensure all users have a valid 'id' property
-      const validIds = users
+      const validIds = Object.values(users) // Convert the object to an array of user objects
         .map((user) => user.id)
         .filter((id) => !isNaN(id) && id !== null); // Filter out invalid IDs
 
@@ -51,11 +70,8 @@ module.exports = async (req, res) => {
         username,
       };
 
-      // Add the new user to the array
-      users.push(newUser);
-
-      // Save the updated array back to Firebase
-      await ref.set(users);
+      // Store the new user in the database under the new ID
+      await ref.child(newId.toString()).set(newUser);
 
       res.status(200).json({
         message: "User added successfully",
