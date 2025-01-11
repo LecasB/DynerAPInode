@@ -40,11 +40,24 @@ module.exports = async (req, res) => {
       const snapshot = await ref.once("value");
       const actions = snapshot.val();
 
+      const formatDate = (date) => {
+        const pad = (n) => n.toString().padStart(2, "0");
+        const day = pad(date.getDate());
+        const month = pad(date.getMonth() + 1); // Meses começam do 0
+        const year = date.getFullYear();
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+      };
+
       const newId = actions.length > 0 ? actions[actions.length - 1].id + 1 : 1;
 
       const newData = {
         id: newId,
         message: newMessage,
+        date: formatDate(new Date()),
       };
 
       actions.push(newData);
