@@ -42,13 +42,6 @@ module.exports = async (req, res) => {
 
       const newId = actions.length > 0 ? actions[actions.length - 1].id + 1 : 1;
 
-      const newData = {
-        id: newId,
-        message: newMessage,
-      };
-
-      actions.push(newData);
-
       function formatDate(date) {
         const day = String(date.getDate()).padStart(2, "0");
         const month = String(date.getMonth() + 1).padStart(2, "0"); // Os meses começam em 0
@@ -61,12 +54,19 @@ module.exports = async (req, res) => {
         return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
       }
 
+      const newData = {
+        id: newId,
+        message: newMessage,
+        date: formatDate(new Date()),
+      };
+
+      actions.push(newData);
+
       await ref.set(actions);
 
       res.status(200).json({
         message: "Data successfully added to Firebase!",
         data: newData,
-        date: formatDate(new Date()),
       });
     } catch (error) {
       console.error(error);
