@@ -29,7 +29,13 @@ module.exports = async (req, res) => {
   try {
     const ref = db.ref("menu/actions");
     const snapshot = await ref.once("value");
-    const data = snapshot.val();
+    let data = snapshot.val();
+
+    // Filtrar valores nulos
+    if (Array.isArray(data)) {
+      data = data.filter((item) => item !== null);
+    }
+
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });

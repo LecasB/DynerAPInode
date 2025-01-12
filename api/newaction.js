@@ -45,8 +45,6 @@ module.exports = async (req, res) => {
       const newData = {
         id: newId,
         message: newMessage,
-        date: new Date().toISOString(),
-        pila: "mangalho",
       };
 
       actions.push(newData);
